@@ -26,16 +26,19 @@ import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 
 /**
+ * 支持随机和顺序访问
  * A random and sequential accessible sequence of zero or more bytes (octets).
  * This interface provides an abstract view for one or more primitive byte
  * arrays ({@code byte[]}) and {@linkplain ByteBuffer NIO buffers}.
  *
  * <h3>Creation of a buffer</h3>
  *
+ * 推荐使用ChannelBuffers创建buffer,不建议自己实现构造方法
  * It is recommended to create a new buffer using the helper methods in
  * {@link ChannelBuffers} rather than calling an individual implementation's
  * constructor.
  *
+ * 随机访问
  * <h3>Random Access Indexing</h3>
  *
  * Just like an ordinary primitive byte array, {@link ChannelBuffer} uses
@@ -45,21 +48,26 @@ import java.nio.charset.UnsupportedCharsetException;
  * iterate all bytes of a buffer, you can do the following, regardless of
  * its internal implementation:
  *
+ *
  * <pre>
  * {@link ChannelBuffer} buffer = ...;
  * for (int i = 0; i &lt; buffer.capacity(); i ++</strong>) {
- *     byte b = array.getByte(i);
+ *     byte b = buffer.getByte(i);
  *     System.out.println((char) b);
  * }
  * </pre>
  *
+ * 顺序访问
+ *
  * <h3>Sequential Access Indexing</h3>
  *
+ * 提供两个索引用于顺序读写操作,readerIndex用于读操作,writeIndex用于写操作
  * {@link ChannelBuffer} provides two pointer variables to support sequential
  * read and write operations - {@link #readerIndex() readerIndex} for a read
  * operation and {@link #writerIndex() writerIndex} for a write operation
  * respectively.  The following diagram shows how a buffer is segmented into
  * three areas by the two pointers:
+ * buffer被两个引用分成了三个区域,可废弃区域,可读区域,可写区域
  *
  * <pre>
  *      +-------------------+------------------+------------------+
@@ -70,6 +78,8 @@ import java.nio.charset.UnsupportedCharsetException;
  *      0      <=      readerIndex   <=   writerIndex    <=    capacity
  * </pre>
  *
+ * 可读区域,存储实际的数据,以read和skip为前缀的方法可以读取或跳过readerIndex后的数据,
+ * 参数也是ChannelBuffer的情况不理解,make by liufq
  * <h4>Readable bytes (the actual content)</h4>
  *
  * This segment is where the actual data is stored.  Any operation whose name
@@ -79,10 +89,13 @@ import java.nio.charset.UnsupportedCharsetException;
  * {@link ChannelBuffer} and no destination index is specified, the specified
  * buffer's {@link #readerIndex() readerIndex} is increased together.
  * <p>
+ *
+ * mark by liufq不懂
  * If there's not enough content left, {@link IndexOutOfBoundsException} is
  * raised.  The default value of newly allocated, wrapped or copied buffer's
  * {@link #readerIndex() readerIndex} is {@code 0}.
  *
+ * 遍历buffer中的可读字节
  * <pre>
  * // Iterates the readable bytes of a buffer.
  * {@link ChannelBuffer} buffer = ...;
@@ -93,6 +106,7 @@ import java.nio.charset.UnsupportedCharsetException;
  *
  * <h4>Writable bytes</h4>
  *
+ * 可读区域是需要被填充的区域,以write为后缀的操作可以从wrieteIndex后写数据.参数为ChannelBuffer,mark by liufq
  * This segment is a undefined space which needs to be filled.  Any operation
  * whose name ends with {@code write} will write the data at the current
  * {@link #writerIndex() writerIndex} and increase it by the number of written
@@ -114,8 +128,11 @@ import java.nio.charset.UnsupportedCharsetException;
  * }
  * </pre>
  *
+ * 可废弃区域
  * <h4>Discardable bytes</h4>
  *
+ * 可废弃区域是已经被读过的区域.初始时,区域大小为0,写操作时随writeIndex增长.
+ * 调用discardReadBytes()方法后,读过的字节就可以废弃,整个可废弃区域会被回收
  * This segment contains the bytes which were read already by a read operation.
  * Initially, the size of this segment is {@code 0}, but its size increases up
  * to the {@link #writerIndex() writerIndex} as read operations are executed.
@@ -173,18 +190,24 @@ import java.nio.charset.UnsupportedCharsetException;
  *      0 = readerIndex = writerIndex            <=            capacity
  * </pre>
  *
+ * 查询操作
  * <h3>Search operations</h3>
  *
+ * indexOf()方法用于确定的条件,复杂的查询可以使用ChannelBufferIndexFinder
  * Various {@link #indexOf(int, int, byte)} methods help you locate an index of
  * a value which meets a certain criteria.  Complicated dynamic sequential
  * search can be done with {@link ChannelBufferIndexFinder} as well as simple
  * static single byte search.
  * <p>
+ *
+ * mark by liufq
  * If you are decoding variable length data such as NUL-terminated string, you
  * will find {@link #bytesBefore(byte)} also useful.
  *
+ * 标记和重置
  * <h3>Mark and reset</h3>
  *
+ * 每个buffer中有两个标记索引.reset使两个索引相等.It works mark by liufq
  * There are two marker indexes in every buffer. One is for storing
  * {@link #readerIndex() readerIndex} and the other is for storing
  * {@link #writerIndex() writerIndex}.  You can always reposition one of the
@@ -192,6 +215,7 @@ import java.nio.charset.UnsupportedCharsetException;
  * the mark and reset methods in {@link InputStream} except that there's no
  * {@code readlimit}.
  *
+ * mark by liufq
  * <h3>Derived buffers</h3>
  *
  * You can create a view of an existing buffer by calling either
@@ -205,6 +229,7 @@ import java.nio.charset.UnsupportedCharsetException;
  *
  * <h3>Conversion to existing JDK types</h3>
  *
+ * mark by liufq
  * <h4>Byte array</h4>
  *
  * If a {@link ChannelBuffer} is backed by a byte array (i.e. {@code byte[]}),
